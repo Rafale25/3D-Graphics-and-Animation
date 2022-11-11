@@ -94,49 +94,105 @@ The material is composed of 3 components
 Everything put together
 <img src="images/rusty_metal.png" width="100%"/>
 
-
-
-
+That's all for the robot !
 
 <br>
 
----
+> Next i started making the rest of the scene in where the robot was gonna be rendered.
+
 <br>
 
-- walls, ground, pillar
-    - explain that I used free textures from internet and not procedural materials
+# Environment
+The environment is composed of 3 simple objects
+- The floor
+- 2 walls
+- 3 pillars
+
+<img src="images/environment_solid.png" width="100%"/>
+
+For each of them I used free texture found on internet to make the materials.
+Textures composed of **color**, **roughness**, **normals** and **displacement**.
+
+<br>
+
+To create a material using these textures, I create a new material.<br>
+<img src="images/node_wrangler2.png" width="40%"/>
+
+Then I use the node-wrangler builtin addon and select the BSDF and press **Ctrl + Shift + T**.
+It open a file prompt where I select the 4 textures and it automatically link them by detecting the word in the file names.
+
+<img src="images/node_wrangler.png" width="100%"/>
+
+<br>
+
+> explain the UV unwrapping
 
 
-- wall light
-    - then I added a wall light with an emissive material as light source
+I do this for the 3 models and here is the result.
+<img src="images/environment_render.png" width="100%"/>
 
-> i wanted to have a few objects in background because of the project requirements and because the scene background was kinda empty
-- sledge hammer
-- wooden crate
-- wooden palette
-- handsaw
+<br>
+
+# Wall light
+
+Just some simple geometry with a dark black material and an emissive one for the light parts of the mesh.
+
+<img src="images/wall_light_solid.png" width="49%"/>
+<img src="images/wall_light_material.png" width="49%"/>
+Placed in the scene.
+<img src="images/scene_lights.png" width="100%"/>
+
+<br>
+
+# Sledge hammer
+
+Simple model, nothing special, I used the node wrangler and some free textures for the metal head.
+
+<img src="images/hammer_solid.png" width="20%"/>
+<img src="images/hammer_render.png" width="14.2%"/>
+
+<br>
+
+# Wooden crate
+
+Another simple model that uses 2 textures.
+I had to use a colorRamp to lighten the wood and darken the other to make it look better.
+
+<img src="images/crate_solid.png" width="40%"/>
+<img src="images/crate_render.png" width="40%"/>
+
+<br>
+
+# Wooden palette
+
+Again another simple model that uses 2 textures.
+Had to move manually the uv map for the edge faces of the botton planks to place them at good places on the trunk texture.
+
+<img src="images/palette_solid.png" width="49%"/>
+<img src="images/palette_render.png" width="49%"/>
+
+<br>
+
+# Handsaw
+
+I used a reference image for this model and the path tool to make the handle that i then converted to a mesh.
+
+<img src="images/hand_saw_solid.png" width="49%"/>
+<img src="images/hand_saw_render.png" width="49%"/>
+
+<br><br>
+
+# Compositing
+
+For the final render I placed in some coherent way the simple models in the background of scene.
+And i duplicated the robot and gave a different color to the new one. I use the armature to position them in like if they are fighting each other.
 
 
-> explain each individually
-- sledge hammer
-    - simple to do, used free textures
+<img src="images/scene_solid.png" width="100%"/>
 
-- wooden crate
-    - 2 textures
+And a last touch for the render is some depth of field to give more attention on the robots fighting in front of the camera.
 
-- wooden palette
-    - 2 textures
-
-- handsaw
-    - use of the path tool and an image as blueprint then converted it to mesh (extruded, boolean for the center ...)
-
----
-
-## Compositing
-- Use of depth of field
-
-
-
+<br><br>
 
 # Resources
 
