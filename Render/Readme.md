@@ -34,7 +34,6 @@ I used a UV sphere and a boolean modifier to make a sphere hole for the legs joi
 <img src="images/body.png" width="50%"/>
 
 As for the eye, i used inset on the front face, then subdivided the inner square and then translate the middle point with proportional editing to get the eye shape. (I change the eye later by a torus and a sphere because i realized it was simpler to make a model out of multiple shapes than the same connected mesh)<br>
-<!-- Split this in 2 images and crop in interesting bits -->
 <img src="images/body+eye.png" width="75%"/>
 
 The arm is a single segment that I duplicated and put on top of each of other scaling it down a bit each time.<br>
@@ -51,6 +50,7 @@ The leg is the most detailed part of the robot's mesh. But not very interesting 
 
 ## Armature
 For the armature i used bones instead of simple object parenting because I wanted to use inverse kinematics to make the job of animating it for the Unreal Animation easier (turned out that IK is difficult)
+I also added rotation constraints on the leg tips and on the whole arm to make it easier to position later.
 
 <!-- constraints -->
 
@@ -191,6 +191,15 @@ And i duplicated the robot and gave a different color to the new one. I use the 
 <img src="images/scene_solid.png" width="100%"/>
 
 And a last touch for the render is some depth of field to give more attention on the robots fighting in front of the camera.
+
+<br><br>
+
+# Conclusion
+
+I'm happy of what I've accomplished to do globally. But there's a lot of part that I would do differently if I had to do it again.<br>
+For example, the idea of making an object of multiples meshes instead of a single connected one (like the robot's eye that I actually changed at the end). Because of that, I have lost a lot of time at the beginning and on the robot. The tail of the robot have this problem even thought i did not mention it.<br>
+Also the robot's armature is difficult to work with and to select, i did not do a great job on parenting objects.
+I couldn't make a walking animation for the unreal Animation because too difficult without Inverse Kinematics.
 
 <br><br>
 
