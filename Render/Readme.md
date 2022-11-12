@@ -82,12 +82,12 @@ The material is composed of 3 components
 - The edge wear
 <img src="images/material_metal_edge_wear.png" width="100%"/>
 
-    <p>no edge wear</p>
-    <img src="images/no_edge_wear.png" width="20%"/>
+<p>no edge wear</p>
+<img src="images/no_edge_wear.png" width="20%"/>
 
-    <br>
-    <p>with edge wear</p>
-    <img src="images/edge_wear.png" width="20%"/>
+<br>
+<p>with edge wear</p>
+<img src="images/edge_wear.png" width="20%"/>
 
 <br>
 
