@@ -1,0 +1,312 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v3.3.32",
+        "version" : "2.0"
+    },
+    "extensionsUsed" : [
+        "KHR_materials_specular",
+        "KHR_materials_ior"
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0,
+                1
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Table",
+            "scale" : [
+                0.29085972905158997,
+                0.1790962517261505,
+                0.29085972905158997
+            ],
+            "translation" : [
+                0.46191489696502686,
+                0.9598045349121094,
+                -0.07083653658628464
+            ]
+        },
+        {
+            "mesh" : 1,
+            "name" : "Feet",
+            "rotation" : [
+                0,
+                0.8660253882408142,
+                0,
+                0.4999999701976776
+            ],
+            "scale" : [
+                0.06517799198627472,
+                0.06517797708511353,
+                0.06517799198627472
+            ],
+            "translation" : [
+                0.4621618390083313,
+                0.20205587148666382,
+                -0.07137994468212128
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "extensions" : {
+                "KHR_materials_specular" : {
+                    "specularColorFactor" : [
+                        0.711407312601205,
+                        0.711407312601205,
+                        0.711407312601205
+                    ]
+                },
+                "KHR_materials_ior" : {
+                    "ior" : 1.4500000476837158
+                }
+            },
+            "name" : "Table_Wood_diffuse",
+            "normalTexture" : {
+                "index" : 0
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 1
+                },
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.44999998807907104
+            }
+        },
+        {
+            "doubleSided" : true,
+            "extensions" : {
+                "KHR_materials_specular" : {
+                    "specularColorFactor" : [
+                        0.711407312601205,
+                        0.711407312601205,
+                        0.711407312601205
+                    ]
+                },
+                "KHR_materials_ior" : {
+                    "ior" : 1.4500000476837158
+                }
+            },
+            "name" : "Feet_Wood_diffuse",
+            "normalTexture" : {
+                "index" : 2
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 3
+                },
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.44999998807907104
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Cylinder.002",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        },
+        {
+            "name" : "Mesh",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 4,
+                        "NORMAL" : 5,
+                        "TEXCOORD_0" : 6
+                    },
+                    "indices" : 7,
+                    "material" : 1
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "sampler" : 0,
+            "source" : 0
+        },
+        {
+            "sampler" : 0,
+            "source" : 1
+        },
+        {
+            "sampler" : 0,
+            "source" : 2
+        },
+        {
+            "sampler" : 0,
+            "source" : 3
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "Table_Wood_normals",
+            "uri" : "textures/Table_Wood_normals.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "Table_Wood_diffuse",
+            "uri" : "textures/Table_Wood_diffuse.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "Feet_Wood_normals",
+            "uri" : "textures/Feet_Wood_normals.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "Feet_Wood_diffuse",
+            "uri" : "textures/Feet_Wood_diffuse.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 4192,
+            "max" : [
+                1.6224569082260132,
+                -0.00019282102584838867,
+                1.622393012046814
+            ],
+            "min" : [
+                -1.6236804723739624,
+                -4.142517566680908,
+                -1.6237444877624512
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 4192,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 4192,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 22260,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "count" : 3639,
+            "max" : [
+                3.7116031646728516,
+                4.144212245941162,
+                4.261035919189453
+            ],
+            "min" : [
+                -3.785421133041382,
+                -3.2023141384124756,
+                -2.4580752849578857
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 5,
+            "componentType" : 5126,
+            "count" : 3639,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 6,
+            "componentType" : 5126,
+            "count" : 3639,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 7,
+            "componentType" : 5123,
+            "count" : 17856,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 50304,
+            "byteOffset" : 0,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 50304,
+            "byteOffset" : 50304,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 33536,
+            "byteOffset" : 100608,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 44520,
+            "byteOffset" : 134144,
+            "target" : 34963
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 43668,
+            "byteOffset" : 178664,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 43668,
+            "byteOffset" : 222332,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 29112,
+            "byteOffset" : 266000,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 35712,
+            "byteOffset" : 295112,
+            "target" : 34963
+        }
+    ],
+    "samplers" : [
+        {
+            "magFilter" : 9729,
+            "minFilter" : 9987
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 330824,
+            "uri" : "table.bin"
+        }
+    ]
+}
