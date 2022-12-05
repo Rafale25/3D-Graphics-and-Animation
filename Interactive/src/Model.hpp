@@ -35,6 +35,7 @@ struct Mesh // primitive in
 class Model
 {
     public:
+        // Model() {};
         // Model();
         // ~Model();
 
@@ -57,7 +58,7 @@ class Model
     private:
         tinygltf::Model _model;
         std::map<int, Mesh> _meshes;
-        std::vector<Texture> _textures; // TODO: check if textures are already loaded
+        std::map<int, Texture> _textures; // TODO: check if textures are already loaded
 
         const Shader* _cachedProgram;
 };

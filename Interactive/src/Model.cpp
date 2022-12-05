@@ -87,10 +87,10 @@ Mesh Model::bindMesh(tinygltf::Model &model, tinygltf::Mesh &mesh)
                 vaa = 0;
             if (attrib.first.compare("NORMAL") == 0)
                 vaa = 1;
-            if (attrib.first.compare("TANGENT") == 0)
-                vaa = 2;
+            // if (attrib.first.compare("TANGENT") == 0)
+            //     vaa = 2;
             if (attrib.first.compare("TEXCOORD_0") == 0)
-                vaa = 3;
+                vaa = 2;
             if (vaa > -1)
             {
                 glEnableVertexAttribArray(vaa);
@@ -170,11 +170,12 @@ void Model::loadTextures()
             else { // ???
             }
 
-            const std::vector<std::string> diffuseKeywords = {"diffuse", "basecolor", "color", "colors"};
+            const std::vector<std::string> diffuseKeywords = {"albedo", "diffuse", "basecolor", "color", "colors"};
             const std::vector<std::string> normalsKeywords = {"normal", "normals", "bump"};
             const std::vector<std::string> metallicRoughnessKeywords = {"roughness", "metallic", "metal", "rough"};
+            const std::vector<std::string> ambiantOcclusionKeywords = {"ao", "ambientocclusion"};
 
-            std::string textureType = "texture_diffuse";
+            std::string textureType;
 
             if (stringContainsAny(image.uri, diffuseKeywords))
             {
@@ -182,22 +183,27 @@ void Model::loadTextures()
             }
             else if (stringContainsAny(image.uri, normalsKeywords))
             {
-                textureType = "texture_normals";
+                textureType = "texture_normal";
             }
             else if (stringContainsAny(image.uri, metallicRoughnessKeywords))
             {
                 textureType = "texture_metallic_roughness";
             }
+            else if (stringContainsAny(image.uri, ambiantOcclusionKeywords))
+            {
+                textureType = "texture_ambiant_occlusion";
+            }
             else
             {
                 std::cout << image.uri << " texture: Texture name doesn't contain keyword, defaulting to diffuse" << std::endl;
+                continue;
             }
 
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
                         format, type, &image.image.at(0));
             std::cout << image.uri << " is used as " << textureType << std::endl;
 
-            _textures.push_back(Texture{textureId, textureType, image.uri});
+            _textures[i] = Texture{textureId, textureType, image.uri};
         }
     }
 }
@@ -284,6 +290,13 @@ void Model::drawMesh(const Mesh& glMesh, tinygltf::Model& model, tinygltf::Mesh&
             glBindTexture(GL_TEXTURE_2D, _textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].id);
         }
 
+        if (material.occlusionTexture.index > -1) {
+            texture = _textures[material.occlusionTexture.index];
+            glActiveTexture(GL_TEXTURE0 + 3);
+            glUniform1i(glGetUniformLocation(_cachedProgram->ID, texture.type.c_str()), 3);
+            glBindTexture(GL_TEXTURE_2D, _textures[material.occlusionTexture.index].id);
+        }
+
         if (material.alphaMode == "BLEND")
             glEnable(GL_BLEND);
         else
@@ -292,8 +305,13 @@ void Model::drawMesh(const Mesh& glMesh, tinygltf::Model& model, tinygltf::Mesh&
         glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType, BUFFER_OFFSET(indexAccessor.byteOffset));
     }
 
+    // unbind all textures
+    for (int i = 0 ; i < 4 ; ++i) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
     glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
 }
 
 void Model::drawModelNodes(tinygltf::Model& model, tinygltf::Node& node, glm::mat4 nodeMatrix)
