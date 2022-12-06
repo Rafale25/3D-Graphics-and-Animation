@@ -1,6 +1,7 @@
 #include "Context.hpp"
 
-Context::Context(int width, int height, const char *title) {
+Context::Context(int width, int height, const char *title)
+{
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -35,10 +36,16 @@ Context::Context(int width, int height, const char *title) {
     imguiInit();
 
     // default View
-    current_view = new DefaultView(*this);
+    _current_view = new DefaultView(*this);
+
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    _mouseX = mouseX;
+    _mouseY = mouseY;
 }
 
-Context::~Context() {
+Context::~Context()
+{
     glfwTerminate();
 
     ImGui_ImplOpenGL3_Shutdown();
@@ -46,7 +53,8 @@ Context::~Context() {
     ImGui::DestroyContext();
 };
 
-void Context::run() {
+void Context::run()
+{
     double start_time = glfwGetTime();
     double last_frame_time = start_time;
 
@@ -60,30 +68,34 @@ void Context::run() {
         double delta_time = time - last_frame_time;
         last_frame_time = time;
 
-        current_view->onUpdate(time_since_start, delta_time);
-        current_view->onDraw(time_since_start, delta_time);
+        _current_view->onUpdate(time_since_start, delta_time);
+        _current_view->onDraw(time_since_start, delta_time);
 
         swapBuffers();
         glfwPollEvents();
     }
 }
 
-void Context::swapBuffers() {
+void Context::swapBuffers()
+{
     glfwSwapBuffers(window);
 }
 
-void Context::imguiNewFrame() {
+void Context::imguiNewFrame()
+{
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-void Context::imguiRender() {
+void Context::imguiRender()
+{
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Context::imguiInit() {
+void Context::imguiInit()
+{
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGuiContext* imgui_context = ImGui::CreateContext();
@@ -97,13 +109,15 @@ void Context::imguiInit() {
     io.FontGlobalScale = 1.85f; // Scale everything
 }
 
-void Context::show_view(View *view) {
-    current_view->onHideView();
-    current_view = view;
+void Context::show_view(View *view)
+{
+    _current_view->onHideView();
+    _current_view = view;
     view->onShowView();
 }
 
-void Context::setVsync(int value) {
+void Context::setVsync(int value)
+{
     // TODO: add check for invalid value
     glfwSwapInterval(value);
 }
@@ -118,25 +132,25 @@ void Context::key_callback(GLFWwindow* window, int key, int scancode, int action
 
     // call pressed/release events (need to do that because of key repeat)
     if (action == GLFW_PRESS)
-        ctx->current_view->onKeyPress(key);
+        ctx->_current_view->onKeyPress(key);
     else if (action == GLFW_RELEASE)
-        ctx->current_view->onKeyRelease(key);
+        ctx->_current_view->onKeyRelease(key);
 }
 
 void Context::cursor_position_callback(GLFWwindow* window, double x, double y)
 {
     Context* ctx = ((Context*)glfwGetWindowUserPointer(window));
 
-    float dx = x - ctx->mouseX;
-    float dy = y - ctx->mouseY;
+    float dx = x - ctx->_mouseX;
+    float dy = y - ctx->_mouseY;
 
-    ctx->current_view->onMouseMotion(x, y, dx, dy);
+    ctx->_current_view->onMouseMotion(x, y, dx, dy);
 
-    ctx->mouseX = x;
-    ctx->mouseY = y;
+    ctx->_mouseX = x;
+    ctx->_mouseY = y;
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        ctx->current_view->onMouseDrag(x, y, dx, dy);
+        ctx->_current_view->onMouseDrag(x, y, dx, dy);
     }
 }
 
@@ -145,16 +159,16 @@ void Context::mouse_button_callback(GLFWwindow* window, int button, int action, 
     Context* ctx = ((Context*)glfwGetWindowUserPointer(window));
 
     if (action == GLFW_PRESS)
-        ctx->current_view->onMousePress(ctx->mouseX, ctx->mouseY, button);
+        ctx->_current_view->onMousePress(ctx->_mouseX, ctx->_mouseY, button);
     else if (action == GLFW_RELEASE)
-        ctx->current_view->onMouseRelease(ctx->mouseX, ctx->mouseY, button);
+        ctx->_current_view->onMouseRelease(ctx->_mouseX, ctx->_mouseY, button);
 }
 
 void Context::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     Context* ctx = ((Context*)glfwGetWindowUserPointer(window));
 
-    ctx->current_view->onMouseScroll(xoffset, yoffset);
+    ctx->_current_view->onMouseScroll(xoffset, yoffset);
 }
 
 void Context::cursor_enter_callback(GLFWwindow* window, int entered)
@@ -162,14 +176,14 @@ void Context::cursor_enter_callback(GLFWwindow* window, int entered)
     Context* ctx = ((Context*)glfwGetWindowUserPointer(window));
 
     if (entered)
-        ctx->current_view->onMouseEnter(ctx->mouseX, ctx->mouseY);
+        ctx->_current_view->onMouseEnter(ctx->_mouseX, ctx->_mouseY);
     else
-        ctx->current_view->onMouseLeave(ctx->mouseX, ctx->mouseY);
+        ctx->_current_view->onMouseLeave(ctx->_mouseX, ctx->_mouseY);
 }
 
 void Context::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     Context* ctx = ((Context*)glfwGetWindowUserPointer(window));
 
-    ctx->current_view->onResize(width, height);
+    ctx->_current_view->onResize(width, height);
 }

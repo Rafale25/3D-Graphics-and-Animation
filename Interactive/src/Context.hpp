@@ -37,7 +37,6 @@ class Context {
         GLFWwindow* window;
 
     private:
-        View* current_view;
-        int mouseX, mouseY;
-        // int keyState[GLFW_KEY_LAST] = {0};
+        View* _current_view;
+        int _mouseX, _mouseY;
 };

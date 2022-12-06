@@ -168,12 +168,10 @@ void main()
 
     emission *= step(0.075, length(emission)); // remove artefacts
 
-    vec3 color = ambient + Lo + emission;
-    // color += (skyboxColor * metallic * (1.0 - roughness)) * 0.5;
-    // color = mix(color, skyboxColor, metallic * (1.0 - roughness));
+    vec3 color = ambient + Lo + emission; //emission is not in the original code
 
     float skyFactor = (1.0-roughness) * metallic;
-    color += skyboxColor * albedo * skyFactor; // bullshit reflection maths
+    color += skyboxColor * albedo * skyFactor; // bullshit reflection maths (also add to the overall intensity which is pretty low by default)
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
@@ -181,8 +179,8 @@ void main()
     // color = pow(color, vec3(1.0/2.2));
     color = pow(color, vec3(1.0/2.6));
 
-    // FragColor = vec4(skyboxColor, base_color.a);
     FragColor = vec4(color, base_color.a);
+    // FragColor = vec4(skyboxColor, base_color.a);
     // FragColor = vec4(emission, base_color.a);
     // FragColor = vec4(base_color);
     // FragColor = vec4(vec3(ao), base_color.a);

@@ -8,6 +8,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <iostream>
+
 class Camera {
     public:
         Camera() {}
@@ -122,7 +124,84 @@ class OrbitCamera: public Camera {
         float _distance;
 };
 
-// class FPSCamera: public Camera {
-//     public:
-//     private:
-// };
+class FPSCamera: public Camera {
+    public:
+        FPSCamera()
+        {}
+        FPSCamera(glm::vec3 position, float fov, float aspect_ratio, float near_plane, float far_plane):
+            _position(position),
+            Camera(fov, aspect_ratio, near_plane, far_plane)
+        {}
+
+        glm::mat4 getView()
+        {
+            _updateVectors();
+            // return glm::lookAt(_position, _position + _forward, _up);
+            return glm::lookAt(_smoothPosition, _smoothPosition + _forward, _up);
+        }
+
+        glm::vec3 getPosition()
+        {
+            return _position;
+        }
+
+        void update()
+        {
+            _smoothYaw = glm::mix(_smoothYaw, _yaw, 0.2f);
+            _smoothPitch = glm::mix(_smoothPitch, _pitch, 0.2f);
+            _smoothRoll = glm::mix(_smoothRoll, _roll, 0.2f);
+
+            _smoothPosition = glm::mix(_smoothPosition, _position, 0.15f);
+        }
+
+        void move(glm::vec3 direction)
+        {
+            _position += -glm::inverse(glm::mat3(getView())) * direction * _speed;
+        }
+
+        void onMouseMotion(int x, int y, int dx, int dy)
+        {
+            _yaw += (float)dx * _mouseSensitivity;
+            _pitch += -(float)dy * _mouseSensitivity;
+
+            if (_pitch > 89.0f)
+                _pitch = 89.0f;
+            if (_pitch < -89.0f)
+                _pitch = -89.0f;
+        }
+
+    private:
+        void _updateVectors()
+        {
+            // _forward.x = glm::cos(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch));
+            // _forward.y = glm::sin(glm::radians(_pitch));
+            // _forward.z = glm::sin(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch));
+
+            _forward.x = glm::cos(glm::radians(_smoothYaw)) * glm::cos(glm::radians(_smoothPitch));
+            _forward.y = glm::sin(glm::radians(_smoothPitch));
+            _forward.z = glm::sin(glm::radians(_smoothYaw)) * glm::cos(glm::radians(_smoothPitch));
+
+            _forward = glm::normalize(_forward);
+            _right = glm::normalize(glm::cross(_forward, _up));
+            // _up = glm::normalize(glm::cross(_right, _forward));
+        }
+
+    private:
+        float _speed = 0.02f;
+        float _mouseSensitivity = 0.1f;
+
+        float _yaw = 0.0f;
+        float _pitch = 0.0f;
+        float _roll = 0.0f;
+        glm::vec3 _position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+        float _smoothYaw = 0.0f;
+        float _smoothPitch = 0.0f;
+        float _smoothRoll = 0.0f;
+        glm::vec3 _smoothPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+
+
+        glm::vec3 _forward = glm::vec3(0.0, 0.0, 1.0);
+        glm::vec3 _right = glm::vec3(1.0, 0.0, 0.0);
+        glm::vec3 _up = glm::vec3(0.0, 1.0, 0.0);
+};
