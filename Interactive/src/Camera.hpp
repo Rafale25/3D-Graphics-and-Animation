@@ -104,6 +104,17 @@ class OrbitCamera: public Camera {
             _distance = value;
         }
 
+        void onMouseDrag(int x, int y, int dx, int dy)
+        {
+            setYaw( getYaw() - (dx * 0.005f) );
+            setPitch( getPitch() + (dy * 0.005f) );
+        }
+
+        void onMouseScroll(int scroll_x, int scroll_y)
+        {
+            setDistance( getDistance() - (scroll_y * 0.2f) );
+        }
+
     private:
         glm::vec3 _center;
         float _yaw;

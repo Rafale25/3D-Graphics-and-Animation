@@ -39,7 +39,7 @@ class Model
         // Model();
         // ~Model();
 
-        void loadModel(std::string filepath);
+        void loadGLTF(std::string filepath);
         void draw(const Shader &program);
 
     private:

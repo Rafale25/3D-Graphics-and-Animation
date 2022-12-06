@@ -1,6 +1,6 @@
 #include "Model.hpp"
 
-void Model::loadModel(std::string filepath)
+void Model::loadGLTF(std::string filepath)
 {
     std::cout << "Trying to load model " << filepath << "\n";
 
@@ -12,10 +12,14 @@ void Model::loadModel(std::string filepath)
     if (!warn.empty()) std::cout << "WARNING - GLTF: " << warn << std::endl;
     if (!err.empty())  std::cout << "ERROR - GLTF: " << err << std::endl;
 
-    if (!res)
+    if (!res) {
         std::cout << "ERROR - Failed to load glTF: " << filepath << std::endl;
+        throw new std::runtime_error("Model::loadGLTF failed.");
+    }
     else
+    {
         std::cout << "OK - Loaded glTF: " << filepath << std::endl;
+    }
 
     bindModel();
 }
@@ -174,6 +178,7 @@ void Model::loadTextures()
             const std::vector<std::string> normalsKeywords = {"normal", "normals", "bump"};
             const std::vector<std::string> metallicRoughnessKeywords = {"roughness", "metallic", "metal", "rough"};
             const std::vector<std::string> ambiantOcclusionKeywords = {"ao", "ambientocclusion"};
+            const std::vector<std::string> emissiveKeywords = {"emissive", "emission"};
 
             std::string textureType;
 
@@ -192,6 +197,10 @@ void Model::loadTextures()
             else if (stringContainsAny(image.uri, ambiantOcclusionKeywords))
             {
                 textureType = "texture_ambiant_occlusion";
+            }
+            else if (stringContainsAny(image.uri, emissiveKeywords))
+            {
+                textureType = "texture_emission";
             }
             else
             {
@@ -297,6 +306,13 @@ void Model::drawMesh(const Mesh& glMesh, tinygltf::Model& model, tinygltf::Mesh&
             glBindTexture(GL_TEXTURE_2D, _textures[material.occlusionTexture.index].id);
         }
 
+        if (material.emissiveTexture.index > -1) {
+            texture = _textures[material.emissiveTexture.index];
+            glActiveTexture(GL_TEXTURE0 + 4);
+            glUniform1i(glGetUniformLocation(_cachedProgram->ID, texture.type.c_str()), 4);
+            glBindTexture(GL_TEXTURE_2D, _textures[material.emissiveTexture.index].id);
+        }
+
         if (material.alphaMode == "BLEND")
             glEnable(GL_BLEND);
         else
@@ -306,7 +322,7 @@ void Model::drawMesh(const Mesh& glMesh, tinygltf::Model& model, tinygltf::Mesh&
     }
 
     // unbind all textures
-    for (int i = 0 ; i < 4 ; ++i) {
+    for (int i = 0 ; i < 5 ; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
