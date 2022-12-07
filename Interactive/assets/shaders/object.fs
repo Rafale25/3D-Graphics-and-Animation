@@ -90,6 +90,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 // ----------------------------------------------------------------------------
+
 void main()
 {
     vec4 base_color = texture(texture_diffuse, fs_in.tex_coords).rgba;
@@ -98,11 +99,13 @@ void main()
         discard;
 
     vec3 albedo     = pow(base_color.rgb, vec3(2.2));
+    // vec3 albedo     = base_color.rgb;
     vec2 metallic_roughness = texture(texture_metallic_roughness, fs_in.tex_coords).gb;
     float roughness = metallic_roughness.x;
     float metallic  = metallic_roughness.y;
-    float ao        = texture(texture_ambiant_occlusion, fs_in.tex_coords).r;
+    float ao        = 1.0;//texture(texture_ambiant_occlusion, fs_in.tex_coords).r;
     vec3 emission = texture(texture_emission, fs_in.tex_coords).rgb;
+
 
 
     vec3 N = getNormalFromMap();
@@ -130,7 +133,8 @@ void main()
         // directional
         vec3 L = -normalize(vec3(.2, -.8, -.5));
         vec3 H = normalize(V + L);
-        vec3 radiance = light_colors[i] * 1.0;
+        float sunIntensity = 14.0;
+        vec3 radiance = light_colors[i] * sunIntensity;
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);
@@ -176,8 +180,8 @@ void main()
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correct
-    // color = pow(color, vec3(1.0/2.2));
-    color = pow(color, vec3(1.0/2.6));
+    color = pow(color, vec3(1.0/2.2));
+    // color = pow(color, vec3(1.0/2.6));
 
     FragColor = vec4(color, base_color.a);
     // FragColor = vec4(skyboxColor, base_color.a);

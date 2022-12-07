@@ -8,6 +8,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <tinygltf/stb_image.h>
 
 #include "View.hpp"
@@ -15,6 +16,8 @@
 #include "Camera.hpp"
 #include "Model.hpp"
 #include "Skybox.hpp"
+#include "FrameBuffer.hpp"
+#include "PhysicEntity.hpp"
 
 // #include <glm/gtc/random.hpp>
 // #include <glm/gtc/matrix_transform.hpp>
@@ -23,8 +26,7 @@ class BloatView: public View {
     public:
         BloatView(Context& ctx): View(ctx) {
 
-            int width, height;
-            glfwGetWindowSize(ctx.window, &width, &height);
+            glfwGetWindowSize(ctx.window, &_width, &_height);
             glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
             // _camera = OrbitCamera(
@@ -33,25 +35,40 @@ class BloatView: public View {
             //     60.0f, (float)width / (float)height, 0.01f, 1000.0f
             // );
             _camera = FPSCamera(
-                glm::vec3(0.0f),
-                60.0f, (float)width / (float)height, 0.01f, 1000.0f
+                glm::vec3(5.0f, 3.0, 0.0f), 180.0f, 0.0f,
+                60.0f, (float)_width / (float)_height, 0.01f, 1000.0f
             );
 
             _program_skybox = new Shader("./assets/shaders/skybox.vert", "./assets/shaders/skybox.frag");
             _program_model = new Shader("./assets/shaders/object.vs", "./assets/shaders/object.fs");
+            _program_screen = new Shader("./assets/shaders/screen.vert", "./assets/shaders/screen.frag");
+
+            _framebuffer.create(_width, _height);
 
             Model model_maxwell = Model();
             model_maxwell.loadGLTF("assets/models/maxwell_the_cat/scene.gltf");
             model_maxwell.transform.scale *= 0.1f;
             model_maxwell.transform.position.x = -2.0f;
             model_maxwell.transform.position.z = 2.0f;
-            model_maxwell.transform.position.y = -1.0f;
+            model_maxwell.transform.position.y = 10.0f;
 
             Model model_helmet = Model();
             model_helmet.loadGLTF("assets/DamagedHelmet/glTF/DamagedHelmet.gltf");
 
+            Model model_robot = Model();
+            model_robot.loadGLTF("../../../Downloads/robot/robot.gltf");
+            model_robot.transform.scale = glm::vec3(0.5f);
+            model_robot.transform.position.z = -5.0f;
+
             _models.push_back(model_helmet);
             _models.push_back(model_maxwell);
+            _models.push_back(model_robot);
+
+            for (Model& model : _models) {
+                PhysicEntity entity(&model.transform);
+                _physicEntities.push_back(entity);
+            }
+
         }
         // ~BloatView() {}
 
@@ -62,7 +79,24 @@ class BloatView: public View {
             float z = keyState[GLFW_KEY_W] - keyState[GLFW_KEY_S];
             _camera.move(glm::vec3(x, y, z));
 
-            _camera.update();
+            // holded entity
+            if (_holdedEntity != nullptr) {
+                _holdedEntity->transform->position = _camera.getPosition() + _camera.forward * _holdedDistance;
+                _holdedEntity->transform->rotation = glm::quatLookAt(_camera.forward, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+
+            _camera.update(dt);
+
+            static float fixedUpdateTime = 0.0f;
+            fixedUpdateTime += dt;
+            if (fixedUpdateTime > 1.0f/60.0f) {
+                fixedUpdateTime = 0.0f;
+
+                // fixed update code here (run 60 time per seconds)
+                for (PhysicEntity& e : _physicEntities) {
+                    e.update(dt);
+                }
+            }
         }
 
         void onDraw(float time_since_start, float dt)
@@ -74,7 +108,9 @@ class BloatView: public View {
 
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
 
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+            glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer.framebuffer);
+
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (_wireframe) {
@@ -91,7 +127,6 @@ class BloatView: public View {
             _program_model->setVec3("light_colors[0]", glm::vec3(1.0, 1.0, 1.0));
 
             glActiveTexture(GL_TEXTURE0 + 5);
-            // glBindTexture(GL_TEXTURE_CUBE_MAP, _cubemapTexture);
             glBindTexture(GL_TEXTURE_CUBE_MAP, _skybox.cubemapTexture);
             _program_model->setInt("skybox", 5);
 
@@ -106,6 +141,19 @@ class BloatView: public View {
             _skybox.draw();
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // disable wireframe
+
+            // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+            glDisable(GL_BLEND); // this or clear depth
+            // clear all relevant buffers
+            // glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            _program_screen->use();
+            _program_screen->setInt("screen_texture", 0);
+            _program_screen->setVec2("resolution", glm::vec2(_width, _height));
+            _framebuffer.draw();
 
             ctx.imguiNewFrame();
             ImGui::Begin("Debug");
@@ -133,13 +181,33 @@ class BloatView: public View {
                 else
                     glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
+
+            if (key == GLFW_KEY_F) {
+                if (_holdedEntity == nullptr) {
+
+                    // catch an entity
+                    for (PhysicEntity& e : _physicEntities) {
+                        glm::vec3 p = _camera.getPosition() + _camera.forward * _holdedDistance;
+                        if (glm::distance(p, e.transform->position) < 2.0f) {
+                            e.setActive(false);
+                            _holdedEntity = &e;
+                        }
+                    }
+
+                } else {
+
+                    // release an entity by setting it to null
+                    _holdedEntity->setActive(true);
+                    _holdedEntity->_velocity = _camera.forward * 0.2f;
+                    _holdedEntity = nullptr;
+                }
+            }
         }
 
         void onKeyRelease(int key)
         {
             keyState[key] = false;
         }
-
 
         void onMouseDrag(int x, int y, int dx, int dy)
         {
@@ -164,10 +232,15 @@ class BloatView: public View {
         void onResize(int width, int height)
         {
             glViewport(0, 0, width, height);
+            _width = width;
+            _height = height;
+            _framebuffer.resize(width, height);
         }
 
     private:
         int keyState[GLFW_KEY_LAST] = {0};
+
+        int _width, _height;
 
         // OrbitCamera _camera;
         FPSCamera _camera;
@@ -177,8 +250,14 @@ class BloatView: public View {
 
         Shader* _program_model;
         Shader* _program_skybox;
+        Shader* _program_screen; // post-processing
 
         Skybox _skybox;
+        FrameBuffer _framebuffer;
 
+        std::vector<PhysicEntity> _physicEntities;
         std::vector<Model> _models;
+
+        PhysicEntity* _holdedEntity = nullptr;
+        float _holdedDistance = 3.0f;
 };
