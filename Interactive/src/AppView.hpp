@@ -184,9 +184,6 @@ class AppView: public View {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
             glDisable(GL_BLEND); // this or clear depth
-            // clear all relevant buffers
-            // glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             _program_screen->use();
             _program_screen->setInt("texture_color", 0);
@@ -201,12 +198,18 @@ class AppView: public View {
         void gui(float time_since_start, float dt)
         {
             ctx.imguiNewFrame();
-            ImGui::Begin("Debug");
+            ImGui::Begin("");
+
+            ImGui::Text("Interactive Application | Paul Narchal");
+
+            ImGui::Spacing();ImGui::Spacing();
 
             ImGui::Text("%.4f ms", dt);
             ImGui::Text("%.2f fps", 1.0f / dt);
 
-            ImGui::Text("%.2f %.2f %.2F", _camera.forward.x, _camera.forward.y, _camera.forward.z);
+            ImGui::Spacing();
+
+            ImGui::Text("Camera forward: %.2f %.2f %.2F", _camera.forward.x, _camera.forward.y, _camera.forward.z);
 
             ImGui::Spacing();
 
@@ -216,10 +219,11 @@ class AppView: public View {
             ImGui::Checkbox("Sun light", &_sunLightEnable);
             ImGui::Checkbox("Point lights", &_pointLightsEnable);
 
+            ImGui::Spacing();
+
             ImGui::InputInt("Post processing effect", &_postProcessEffect);
             if (_postProcessEffect < 0)
                 _postProcessEffect = 0; // max-1
-            // loop back when reach max
 
             ImGui::End();
             ctx.imguiRender();
