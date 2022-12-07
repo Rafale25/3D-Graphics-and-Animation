@@ -53,16 +53,20 @@ class BloatView: public View {
             model_maxwell.transform.position.y = 10.0f;
 
             Model model_helmet = Model();
-            model_helmet.loadGLTF("assets/DamagedHelmet/glTF/DamagedHelmet.gltf");
+            model_helmet.loadGLTF("assets/models/DamagedHelmet/glTF/DamagedHelmet.gltf");
 
             Model model_robot = Model();
-            model_robot.loadGLTF("../../../Downloads/robot/robot.gltf");
+            model_robot.loadGLTF("assets/models/robot/robot.gltf");
             model_robot.transform.scale = glm::vec3(0.5f);
             model_robot.transform.position.z = -5.0f;
+
+            Model model_floor = Model();
+            model_floor.loadGLTF("assets/models/floor/plane.gltf");
 
             _models.push_back(model_helmet);
             _models.push_back(model_maxwell);
             _models.push_back(model_robot);
+            _models.push_back(model_floor);
 
             for (Model& model : _models) {
                 PhysicEntity entity(&model.transform);
