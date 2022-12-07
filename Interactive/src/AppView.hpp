@@ -1,209 +1,225 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <tinygltf/stb_image.h>
 
 #include "View.hpp"
 #include "shader.h"
-#include "BoidManager.hpp"
 #include "Camera.hpp"
+#include "Model.hpp"
+#include "Skybox.hpp"
+#include "FrameBuffer.hpp"
+#include "PhysicEntity.hpp"
 
-// #include <glm/glm.hpp>
 // #include <glm/gtc/random.hpp>
 // #include <glm/gtc/matrix_transform.hpp>
-// #include <glm/gtc/type_ptr.hpp>
 
 class AppView: public View {
     public:
         AppView(Context& ctx): View(ctx) {
 
-            int width, height;
-            glfwGetWindowSize(ctx.window, &width, &height);
+            glfwGetWindowSize(ctx.window, &_width, &_height);
+            glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-            camera = new OrbitCamera(
-                glm::vec3(0.0f), 0.0f, 0.0f, 10.0f,
-                60.0f, (float)width / (float)height, 0.01f, 1000.0f
+            // _camera = OrbitCamera(
+            //     glm::vec3(0.0f),
+            //     0.0f, 0.0f, 5.0f,
+            //     60.0f, (float)width / (float)height, 0.01f, 1000.0f
+            // );
+            _camera = FPSCamera(
+                glm::vec3(5.0f, 3.0, 0.0f), 180.0f, 0.0f,
+                // 60.0f, (float)_width / (float)_height, 0.01f, 1000.0f
+                60.0f, (float)_width / (float)_height, 0.01f, 100.0f
             );
 
-            boid_shader = new Shader("./assets/boid.vs", "./assets/boid.fs");
+            _program_skybox = new Shader("./assets/shaders/skybox.vert", "./assets/shaders/skybox.frag");
+            _program_model = new Shader("./assets/shaders/model_pbr.vs", "./assets/shaders/model_pbr.fs");
+            _program_screen = new Shader("./assets/shaders/screen.vert", "./assets/shaders/screen.frag");
 
-            // boids
-            boid_count = 10000;
-            boidManager = new BoidManager(boid_count, glm::vec3(-40), glm::vec3(40));
-            positions = new glm::vec4[boid_count];
+            _framebuffer.create(_width, _height);
 
-            glGenBuffers(1, &ssbo_boid);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_boid);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * 2 * boid_count, NULL, GL_STREAM_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-            // glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(positions), positions, GL_DYNAMIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-            // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo_boid); // bind ssbo to index
+            Model model_maxwell = Model();
+            model_maxwell.loadGLTF("assets/models/maxwell_the_cat/scene.gltf");
+            model_maxwell.transform.scale *= 0.1f;
+            model_maxwell.transform.position.x = -2.0f;
+            model_maxwell.transform.position.z = 2.0f;
+            model_maxwell.transform.position.y = 10.0f;
 
+            Model model_helmet = Model();
+            model_helmet.loadGLTF("assets/models/DamagedHelmet/glTF/DamagedHelmet.gltf");
 
-            const float vertices[] = {
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            Model model_robot = Model();
+            model_robot.loadGLTF("assets/models/robot/robot.gltf");
+            model_robot.transform.scale = glm::vec3(0.5f);
+            model_robot.transform.position.z = -5.0f;
 
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+            Model model_floor = Model();
+            model_floor.loadGLTF("assets/models/floor/plane.gltf");
 
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            _models.push_back(model_helmet);
+            _models.push_back(model_maxwell);
+            _models.push_back(model_robot);
+            _models.push_back(model_floor);
 
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+            // need to take from _models because they are created on the stack and it's making a copy
+            PhysicEntity entity_helmet(&_models[0].transform, 1.0f);
+            PhysicEntity entity_maxwell(&_models[1].transform, 0.0f);
+            PhysicEntity entity_robot(&_models[2].transform, 1.0f);
+            _physicEntities.insert(_physicEntities.end(),{
+                entity_helmet,
+                entity_robot,
+                entity_maxwell,
+            });
 
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+            int nbLights = 32;
+            _program_model->use();
+            _program_model->setInt("nb_lights", nbLights);
+            for (int i = 0 ; i < nbLights ; ++i) {
+                glm::vec3 p = glm::ballRand(15.0f);
+                p.y *= 0.2f;
+                p.y += 0.2f;
 
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-            };
+                _program_model->setVec3(
+                    (std::string("light_positions[") + std::to_string(i) + std::string("]")).c_str(),
+                    p
+                );
+                _program_model->setVec3(
+                    (std::string("light_colors[") + std::to_string(i) + std::string("]")).c_str(),
+                    glm::sphericalRand(1.0f)
+                );
+                _program_model->setFloat(
+                    (std::string("light_intensities[") + std::to_string(i) + std::string("]")).c_str(),
+                    3.0f
+                );
+            }
 
-            glGenVertexArrays(1, &VAO);
-            glGenBuffers(1, &VBO);
-
-            glBindVertexArray(VAO);
-
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-            glEnableVertexAttribArray(0);
-
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-            glEnableVertexAttribArray(1);
-
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
         }
-
-        // ~AppView() {}
-
-        void onHideView() {}
-        void onShowView() {}
+        // ~BloatView() {}
 
         void onUpdate(float time_since_start, float dt)
         {
-            boidManager->update();
+            float x = keyState[GLFW_KEY_A] - keyState[GLFW_KEY_D];
+            float y = keyState[GLFW_KEY_LEFT_CONTROL] - keyState[GLFW_KEY_SPACE];
+            float z = keyState[GLFW_KEY_W] - keyState[GLFW_KEY_S];
+            _camera.move(glm::vec3(x, y, z));
 
+            // holded entity
+            if (_holdedEntity != nullptr) {
+                _holdedEntity->transform->position = _camera.getPosition() + _camera.forward * _holdedDistance;
+                _holdedEntity->transform->rotation = glm::quatLookAt(_camera.forward, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
 
-            glBindBuffer(GL_ARRAY_BUFFER, ssbo_boid); // bind
+            _camera.update(dt);
 
-            float* ptr = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-            memcpy(ptr, boidManager->boids.data(), sizeof(Boid) * boid_count);
-            // for (int i = 0; i < boid_count ; ++i) {
-            //     int index = i * 8; // 8 floats
+            static float fixedUpdateTime = 0.0f;
+            fixedUpdateTime += dt;
+            if (fixedUpdateTime > 1.0f/60.0f) {
+                fixedUpdateTime = 0.0f;
 
-            //     // ptr[index+0] = *glm::value_ptr(boidManager->boids[i].pos);
-            //     ptr[index+0] = boidManager->boids[i].pos.x;
-            //     ptr[index+1] = boidManager->boids[i].pos.y;
-            //     ptr[index+2] = boidManager->boids[i].pos.z;
-            //     // // ptr[index+3] // padding
-            //     ptr[index+4] = boidManager->boids[i].dir.x;
-            //     ptr[index+5] = boidManager->boids[i].dir.y;
-            //     ptr[index+6] = boidManager->boids[i].dir.z;
-            //     // ptr[index+7] // padding
-            // }
-            glUnmapBuffer(GL_ARRAY_BUFFER);
-
-            // glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_boid); // bind
-            // glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4) * boid_count, positions);
-            // glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-
-            boid_shader->setVec3("cameraPos", camera->getPosition());
+                // fixed update code here (run 60 time per seconds)
+                for (PhysicEntity& e : _physicEntities) {
+                    e.update(dt);
+                }
+            }
         }
 
         void onDraw(float time_since_start, float dt)
         {
-            // Rendering
+            glEnable(GL_CULL_FACE);
+
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
 
-            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer.framebuffer);
+
+            glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            boid_shader->use();
-            boid_shader->setMat4("u_projectionMatrix", camera->getProjection());
-            boid_shader->setMat4("u_viewMatrix", camera->getView());
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_boid);
+            if (_wireframe) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // enable wireframe
+            }
 
-            glBindVertexArray(VAO);
-            glDrawArraysInstanced(GL_TRIANGLES, 0, 6*6, boid_count);
+            _program_model->use();
 
+            _program_model->setMat4("view_matrix", _camera.getView());
+            _program_model->setMat4("proj_matrix", _camera.getProjection());
+
+            _program_model->setVec3("view_pos", _camera.getPosition());
+
+            _program_model->setBool("enableSunlight", _sunLightEnable);
+            _program_model->setBool("enablePointLights", _pointLightsEnable);
+
+            _program_model->setVec3("sunDirection", glm::vec3(0.47, -.44, 0.77));
+            _program_model->setFloat("sunIntensity", 12.0f);
+
+            glActiveTexture(GL_TEXTURE0 + 5);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, _skybox.cubemapTexture);
+            _program_model->setInt("skybox", 5);
+
+            for (Model& model : _models) {
+                model.draw(*_program_model);
+            }
+
+            // draw skybox as last
+            if (_skyboxEnable) {
+                _program_skybox->use();
+                _program_skybox->setMat4("view_matrix", glm::mat4(glm::mat3(_camera.getView()))); // remove translation from the view matrix
+                _program_skybox->setMat4("proj_matrix", _camera.getProjection());
+                _skybox.draw();
+            }
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // disable wireframe
+
+            // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+            glDisable(GL_BLEND); // this or clear depth
+            // clear all relevant buffers
+            // glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            _program_screen->use();
+            _program_screen->setInt("texture_color", 0);
+            _program_screen->setInt("texture_depth", 1);
+            _program_screen->setVec2("resolution", glm::vec2(_width, _height));
+            _program_screen->setInt("post_processing_id", _postProcessEffect);
+            _framebuffer.draw();
+
+            gui(time_since_start, dt);
+        }
+
+        void gui(float time_since_start, float dt)
+        {
             ctx.imguiNewFrame();
             ImGui::Begin("Debug");
 
             ImGui::Text("%.4f ms", dt);
             ImGui::Text("%.2f fps", 1.0f / dt);
 
+            ImGui::Text("%.2f %.2f %.2F", _camera.forward.x, _camera.forward.y, _camera.forward.z);
+
             ImGui::Spacing();
 
-            ImGui::SliderFloat(
-                "view distance",
-                &(boidManager->view_distance),
-                0.0f, 10.0f,
-                "%.3f"
-            );
+            ImGui::Checkbox("Wireframe", &_wireframe);
+            ImGui::Checkbox("Skybox", &_skyboxEnable);
 
-            float alignment_weight = 1.87f;
-            float cohesion_weight = 1.34f;
+            ImGui::Checkbox("Sun light", &_sunLightEnable);
+            ImGui::Checkbox("Point lights", &_pointLightsEnable);
 
-            ImGui::SliderFloat(
-                "view angle",
-                &(boidManager->view_angle),
-                0.0f, M_PI,
-                "%.3f"
-            );
-            ImGui::SliderFloat(
-                "Speed",
-                &(boidManager->speed),
-                0.0f, 0.3f,
-                "%.3f"
-            );
-            ImGui::SliderFloat(
-                "Separation weight",
-                &(boidManager->separation_weight),
-                0.0f, 10.0f,
-                "%.3f"
-            );
-            ImGui::SliderFloat(
-                "Alignment weight",
-                &(boidManager->alignment_weight),
-                0.0f, 10.0f,
-                "%.3f"
-            );
-            ImGui::SliderFloat(
-                "Cohesion weight",
-                &(boidManager->cohesion_weight),
-                0.0f, 10.0f,
-                "%.3f"
-            );
-
+            ImGui::InputInt("Post processing effect", &_postProcessEffect);
+            if (_postProcessEffect < 0)
+                _postProcessEffect = 0; // max-1
+            // loop back when reach max
 
             ImGui::End();
             ctx.imguiRender();
@@ -211,14 +227,42 @@ class AppView: public View {
 
         void onKeyPress(int key)
         {
+            keyState[key] = true;
+
+            if (key == GLFW_KEY_C) {
+                _cursorEnable = !_cursorEnable;
+
+                if (_cursorEnable)
+                    glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                else
+                    glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+
+            if (key == GLFW_KEY_F) {
+                if (_holdedEntity == nullptr) {
+
+                    // catch an entity
+                    for (PhysicEntity& e : _physicEntities) {
+                        glm::vec3 p = _camera.getPosition() + _camera.forward * _holdedDistance;
+                        if (glm::distance(p, e.transform->position) < 2.0f) {
+                            e.setActive(false);
+                            _holdedEntity = &e;
+                        }
+                    }
+
+                } else {
+
+                    // release an entity by setting it to null
+                    _holdedEntity->setActive(true);
+                    _holdedEntity->_velocity = _camera.forward * 0.2f;
+                    _holdedEntity = nullptr;
+                }
+            }
         }
 
         void onKeyRelease(int key)
         {
-        }
-
-        void onMouseMotion(int x, int y, int dx, int dy)
-        {
+            keyState[key] = false;
         }
 
         void onMouseDrag(int x, int y, int dx, int dy)
@@ -227,36 +271,56 @@ class AppView: public View {
             if (io.WantCaptureMouse)
                 return;
 
-            camera->setYaw( camera->getYaw() - (dx * 0.005f) );
-            camera->setPitch( camera->getPitch() + (dy * 0.005f) );
-        }
-
-        void onMousePress(int x, int y, int button)
-        {
-        }
-
-        void onMouseRelease(int x, int y, int button)
-        {
+            // _camera.onMouseDrag(x, y, dx, dy);
         }
 
         void onMouseScroll(int scroll_x, int scroll_y)
         {
-            camera->setDistance( camera->getDistance() - (scroll_y * 0.2f) );
+            // _camera.onMouseScroll(scroll_x, scroll_y);
+        }
+
+        void onMouseMotion(int x, int y, int dx, int dy)
+        {
+            if (!_cursorEnable)
+                _camera.onMouseMotion(x, y, dx, dy);
         }
 
         void onResize(int width, int height)
         {
             glViewport(0, 0, width, height);
+            _width = width;
+            _height = height;
+            _framebuffer.resize(width, height);
         }
 
     private:
-        int boid_count;
-        OrbitCamera* camera;
-        Shader* boid_shader;
+        int keyState[GLFW_KEY_LAST] = {0};
 
-        BoidManager* boidManager;
-        glm::vec4* positions;
+        int _width, _height;
 
-        GLuint ssbo_boid;
-        unsigned int VAO, VBO;
+        // OrbitCamera _camera;
+        FPSCamera _camera;
+
+        bool _wireframe = false;
+        bool _cursorEnable = false;
+
+        bool _skyboxEnable = true;
+
+        bool _sunLightEnable = true;
+        bool _pointLightsEnable = true;
+
+        int _postProcessEffect = 0;
+
+        Shader* _program_model;
+        Shader* _program_skybox;
+        Shader* _program_screen; // post-processing
+
+        Skybox _skybox;
+        FrameBuffer _framebuffer;
+
+        std::vector<PhysicEntity> _physicEntities;
+        std::vector<Model> _models;
+
+        PhysicEntity* _holdedEntity = nullptr;
+        float _holdedDistance = 3.0f;
 };
