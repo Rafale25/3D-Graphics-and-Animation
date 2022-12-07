@@ -12,8 +12,9 @@
 class PhysicEntity
 {
     public:
-        PhysicEntity(Transform* t):
-        transform(t)
+        PhysicEntity(Transform* t, float radius):
+        transform(t),
+        _radius(radius)
         {
         }
         // ~PhysicEntity();
@@ -27,8 +28,8 @@ class PhysicEntity
             _velocity *= 0.99f;
             transform->position += _velocity;
 
-            if (transform->position.y < 0.0f) {
-                transform->position.y = 0.0f;
+            if (transform->position.y - _radius < 0.0f) {
+                transform->position.y = _radius;
 
                 if (glm::length(_velocity.y) > 0.03f) {
                     glm::vec3 reflectedVelocity = glm::reflect(_velocity, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -39,12 +40,10 @@ class PhysicEntity
                     // _velocity = glm::vec3(0.0f);
                 }
 
-                _velocity.x *= 0.95f;
-                _velocity.z *= 0.95f;
+                const float groundFriction = 0.95f;
+                _velocity.x *= groundFriction;
+                _velocity.y *= groundFriction;
 
-                // const float groundFriction = 0.7f;
-                // _velocity.x *= groundFriction;
-                // _velocity.y *= groundFriction;
             } else {
                 _velocity.y -= gravity;
             }

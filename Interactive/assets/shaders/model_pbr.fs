@@ -19,10 +19,18 @@ uniform sampler2D texture_emission;
 
 uniform samplerCube skybox;
 
-// lights
-const int nb_light = 1;
-uniform vec3 light_positions[1];// = { vec3(1.0, 1.0, 1.0) };
-uniform vec3 light_colors[1];// = { vec3(1.0, 1.0, 1.0) };
+uniform bool enableSunlight;
+uniform bool enablePointLights;
+
+// sun (pure white)
+uniform vec3 sunDirection;
+uniform float sunIntensity;
+
+// point lights (colored)
+uniform int nb_lights;
+uniform vec3 light_positions[32];
+uniform vec3 light_colors[32];
+uniform float light_intensities[32];
 
 uniform vec3 view_pos;
 
@@ -91,6 +99,37 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 // ----------------------------------------------------------------------------
 
+vec3 reflectance(vec3 radiance, vec3 N, vec3 V, vec3 L, vec3 H, vec3 F0, vec3 albedo, float roughness, float metallic)
+{
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);
+    float G   = GeometrySmith(N, V, L, roughness);
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 specular = numerator / denominator;
+
+    // kS is equal to Fresnel
+    vec3 kS = F;
+    // for energy conservation, the diffuse and specular light can't
+    // be above 1.0 (unless the surface emits light); to preserve this
+    // relationship the diffuse component (kD) should equal 1.0 - kS.
+    vec3 kD = vec3(1.0) - kS;
+    // multiply kD by the inverse metalness such that only non-metals
+    // have diffuse lighting, or a linear blend if partly metal (pure metals
+    // have no diffuse light).
+    kD *= 1.0 - metallic;
+
+    // scale light by NdotL
+    float NdotL = max(dot(N, L), 0.0);
+
+    // add to outgoing radiance Lo
+    vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+
+    return Lo;
+}
+
 void main()
 {
     vec4 base_color = texture(texture_diffuse, fs_in.tex_coords).rgba;
@@ -106,8 +145,6 @@ void main()
     float ao        = 1.0;//texture(texture_ambiant_occlusion, fs_in.tex_coords).r;
     vec3 emission = texture(texture_emission, fs_in.tex_coords).rgb;
 
-
-
     vec3 N = getNormalFromMap();
     vec3 V = normalize(view_pos - fs_in.frag_pos);
     vec3 R = reflect(-V, N); // for skybox reflection
@@ -117,51 +154,78 @@ void main()
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
-    // reflectance equation
     vec3 Lo = vec3(0.0);
-    for(int i = 0; i < nb_light; ++i)
-    {
-        // calculate per-light radiance
 
-        // point light
-        // vec3 L = normalize(light_positions[i] - fs_in.frag_pos);
-        // vec3 H = normalize(V + L);
-        // float distance = length(light_positions[i] - fs_in.frag_pos);
-        // float attenuation = 1.0 / (distance * distance);
-        // vec3 radiance = light_colors[i] * attenuation;
+    // point light
+    if (enablePointLights) {
+        for(int i = 0; i < nb_lights; ++i) {
+            vec3 L = normalize(light_positions[i] - fs_in.frag_pos);
+            vec3 H = normalize(V + L);
+            float distance = length(light_positions[i] - fs_in.frag_pos);
+            float attenuation = 1.0 / (distance * distance);
+            vec3 radiance = light_colors[i] * light_intensities[i] * attenuation;
 
-        // directional
-        vec3 L = -normalize(vec3(.2, -.8, -.5));
-        vec3 H = normalize(V + L);
-        float sunIntensity = 14.0;
-        vec3 radiance = light_colors[i] * sunIntensity;
-
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);
-        float G   = GeometrySmith(N, V, L, roughness);
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-        vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
-
-        // kS is equal to Fresnel
-        vec3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - metallic;
-
-        // scale light by NdotL
-        float NdotL = max(dot(N, L), 0.0);
-
-        // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+            Lo += reflectance(radiance, N, V, L, H, F0, albedo, roughness, metallic);
+        }
     }
+
+    // sun (directional)
+    if (enableSunlight)
+    {
+        // vec3 L = -normalize(vec3(.2, -.8, -.5));
+        vec3 L = -normalize(sunDirection);// -normalize(vec3(.2, -.8, -.5));
+        vec3 H = normalize(V + L);
+        vec3 sunColor = vec3(1.0, 1.0, 1.0);
+        vec3 radiance = sunColor * sunIntensity;
+
+        Lo += reflectance(radiance, N, V, L, H, F0, albedo, roughness, metallic);
+    }
+
+    // reflectance equation
+    // vec3 Lo = vec3(0.0);
+    // for(int i = 0; i < nb_light; ++i)
+    // {
+    //     // calculate per-light radiance
+
+    //     // point light
+    //     // vec3 L = normalize(light_positions[i] - fs_in.frag_pos);
+    //     // vec3 H = normalize(V + L);
+    //     // float distance = length(light_positions[i] - fs_in.frag_pos);
+    //     // float attenuation = 1.0 / (distance * distance);
+    //     // vec3 radiance = light_colors[i] * light_intensities[i] * attenuation;
+
+    //     // directional
+    //     vec3 L = -normalize(vec3(.2, -.8, -.5));
+    //     vec3 H = normalize(V + L);
+    //     float sunIntensity = 14.0;
+    //     vec3 radiance = light_colors[i] * sunIntensity;
+
+    //     // Cook-Torrance BRDF
+    //     float NDF = DistributionGGX(N, H, roughness);
+    //     float G   = GeometrySmith(N, V, L, roughness);
+    //     vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    //     vec3 numerator    = NDF * G * F;
+    //     float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    //     vec3 specular = numerator / denominator;
+
+    //     // kS is equal to Fresnel
+    //     vec3 kS = F;
+    //     // for energy conservation, the diffuse and specular light can't
+    //     // be above 1.0 (unless the surface emits light); to preserve this
+    //     // relationship the diffuse component (kD) should equal 1.0 - kS.
+    //     vec3 kD = vec3(1.0) - kS;
+    //     // multiply kD by the inverse metalness such that only non-metals
+    //     // have diffuse lighting, or a linear blend if partly metal (pure metals
+    //     // have no diffuse light).
+    //     kD *= 1.0 - metallic;
+
+    //     // scale light by NdotL
+    //     float NdotL = max(dot(N, L), 0.0);
+
+    //     // add to outgoing radiance Lo
+    //     Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+    // }
 
     // skybox reflection
     vec3 skyboxColor = texture(skybox, R).rgb;
@@ -170,12 +234,13 @@ void main()
     // this ambient lighting with environment lighting).
     vec3 ambient = vec3(0.03) * albedo * ao;
 
-    emission *= step(0.075, length(emission)); // remove artefacts
+    float skyFactor = (1.0-roughness) * metallic;
+    ambient += skyboxColor * albedo * skyFactor; // bullshit reflection maths (also add to the overall intensity which is pretty low by default)
+
+    emission *= step(0.075, length(emission)); // remove artefacts from emission
 
     vec3 color = ambient + Lo + emission; //emission is not in the original code
 
-    float skyFactor = (1.0-roughness) * metallic;
-    color += skyboxColor * albedo * skyFactor; // bullshit reflection maths (also add to the overall intensity which is pretty low by default)
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));

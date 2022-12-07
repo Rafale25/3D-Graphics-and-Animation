@@ -4,9 +4,16 @@ out vec4 FragColor;
 
 in vec2 tex_coords;
 
+uniform sampler2D texture_color;
+uniform sampler2D texture_depth;
+
 uniform vec2 resolution;
-uniform sampler2D screen_texture;
-uniform int post_processing_id = -1;
+uniform int post_processing_id;
+
+float linearize_depth(float z, float near, float far)
+{
+    return (2.0 * near) / (far + near - z * (far - near));
+}
 
 vec3 chromaticAberation();
 
@@ -16,13 +23,23 @@ void main()
 
     switch (post_processing_id) {
         case 0:
+            color = texture(texture_color, tex_coords).rgb;
+            break;
+        case 1:
             color = chromaticAberation();
             break;
+        case 2:
+            color = 1.0 - texture(texture_color, tex_coords).rgb;
+            break;
         default:
-            color = texture(screen_texture, tex_coords).rgb;
+            color = texture(texture_color, tex_coords).rgb;
             break;
     }
 
+    float depth = texture(texture_depth, tex_coords).r;
+    depth = linearize_depth(depth, 0.01, 100.0);
+
+    // FragColor = vec4(vec3(depth), 1.0);
     FragColor = vec4(color, 1.0);
 }
 
@@ -36,9 +53,10 @@ vec3 chromaticAberation()
     float l = length(uv);
     delta *= 0.02 * l;
 
-    float r = texture(screen_texture, tex_coords - delta).r;
-    float g = texture(screen_texture, tex_coords).g;
-    float b = texture(screen_texture, tex_coords + delta).b;
+    float r = texture(texture_color, tex_coords - delta).r;
+    float g = texture(texture_color, tex_coords).g;
+    float b = texture(texture_color, tex_coords + delta).b;
 
     return vec3(r, g, b);
+
 }

@@ -36,11 +36,12 @@ class BloatView: public View {
             // );
             _camera = FPSCamera(
                 glm::vec3(5.0f, 3.0, 0.0f), 180.0f, 0.0f,
-                60.0f, (float)_width / (float)_height, 0.01f, 1000.0f
+                // 60.0f, (float)_width / (float)_height, 0.01f, 1000.0f
+                60.0f, (float)_width / (float)_height, 0.01f, 100.0f
             );
 
             _program_skybox = new Shader("./assets/shaders/skybox.vert", "./assets/shaders/skybox.frag");
-            _program_model = new Shader("./assets/shaders/object.vs", "./assets/shaders/object.fs");
+            _program_model = new Shader("./assets/shaders/model_pbr.vs", "./assets/shaders/model_pbr.fs");
             _program_screen = new Shader("./assets/shaders/screen.vert", "./assets/shaders/screen.frag");
 
             _framebuffer.create(_width, _height);
@@ -68,9 +69,36 @@ class BloatView: public View {
             _models.push_back(model_robot);
             _models.push_back(model_floor);
 
-            for (Model& model : _models) {
-                PhysicEntity entity(&model.transform);
-                _physicEntities.push_back(entity);
+            // need to take from _models because they are created on the stack and it's making a copy
+            PhysicEntity entity_helmet(&_models[0].transform, 1.0f);
+            PhysicEntity entity_maxwell(&_models[1].transform, 0.0f);
+            PhysicEntity entity_robot(&_models[2].transform, 1.0f);
+            _physicEntities.insert(_physicEntities.end(),{
+                entity_helmet,
+                entity_robot,
+                entity_maxwell,
+            });
+
+            int nbLights = 32;
+            _program_model->use();
+            _program_model->setInt("nb_lights", nbLights);
+            for (int i = 0 ; i < nbLights ; ++i) {
+                glm::vec3 p = glm::ballRand(15.0f);
+                p.y *= 0.2f;
+                p.y += 0.2f;
+
+                _program_model->setVec3(
+                    (std::string("light_positions[") + std::to_string(i) + std::string("]")).c_str(),
+                    p
+                );
+                _program_model->setVec3(
+                    (std::string("light_colors[") + std::to_string(i) + std::string("]")).c_str(),
+                    glm::sphericalRand(1.0f)
+                );
+                _program_model->setFloat(
+                    (std::string("light_intensities[") + std::to_string(i) + std::string("]")).c_str(),
+                    3.0f
+                );
             }
 
         }
@@ -114,7 +142,7 @@ class BloatView: public View {
 
             glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer.framebuffer);
 
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (_wireframe) {
@@ -127,8 +155,12 @@ class BloatView: public View {
             _program_model->setMat4("proj_matrix", _camera.getProjection());
 
             _program_model->setVec3("view_pos", _camera.getPosition());
-            _program_model->setVec3("light_positions[0]", _camera.getPosition());
-            _program_model->setVec3("light_colors[0]", glm::vec3(1.0, 1.0, 1.0));
+
+            _program_model->setBool("enableSunlight", _sunLightEnable);
+            _program_model->setBool("enablePointLights", _pointLightsEnable);
+
+            _program_model->setVec3("sunDirection", glm::vec3(0.47, -.44, 0.77));
+            _program_model->setFloat("sunIntensity", 12.0f);
 
             glActiveTexture(GL_TEXTURE0 + 5);
             glBindTexture(GL_TEXTURE_CUBE_MAP, _skybox.cubemapTexture);
@@ -139,10 +171,12 @@ class BloatView: public View {
             }
 
             // draw skybox as last
-            _program_skybox->use();
-            _program_skybox->setMat4("view_matrix", glm::mat4(glm::mat3(_camera.getView()))); // remove translation from the view matrix
-            _program_skybox->setMat4("proj_matrix", _camera.getProjection());
-            _skybox.draw();
+            if (_skyboxEnable) {
+                _program_skybox->use();
+                _program_skybox->setMat4("view_matrix", glm::mat4(glm::mat3(_camera.getView()))); // remove translation from the view matrix
+                _program_skybox->setMat4("proj_matrix", _camera.getProjection());
+                _skybox.draw();
+            }
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // disable wireframe
 
@@ -155,19 +189,37 @@ class BloatView: public View {
             // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             _program_screen->use();
-            _program_screen->setInt("screen_texture", 0);
+            _program_screen->setInt("texture_color", 0);
+            _program_screen->setInt("texture_depth", 1);
             _program_screen->setVec2("resolution", glm::vec2(_width, _height));
+            _program_screen->setInt("post_processing_id", _postProcessEffect);
             _framebuffer.draw();
 
+            gui(time_since_start, dt);
+        }
+
+        void gui(float time_since_start, float dt)
+        {
             ctx.imguiNewFrame();
             ImGui::Begin("Debug");
 
             ImGui::Text("%.4f ms", dt);
             ImGui::Text("%.2f fps", 1.0f / dt);
 
+            ImGui::Text("%.2f %.2f %.2F", _camera.forward.x, _camera.forward.y, _camera.forward.z);
+
             ImGui::Spacing();
 
             ImGui::Checkbox("Wireframe", &_wireframe);
+            ImGui::Checkbox("Skybox", &_skyboxEnable);
+
+            ImGui::Checkbox("Sun light", &_sunLightEnable);
+            ImGui::Checkbox("Point lights", &_pointLightsEnable);
+
+            ImGui::InputInt("Post processing effect", &_postProcessEffect);
+            if (_postProcessEffect < 0)
+                _postProcessEffect = 0; // max-1
+            // loop back when reach max
 
             ImGui::End();
             ctx.imguiRender();
@@ -251,6 +303,13 @@ class BloatView: public View {
 
         bool _wireframe = false;
         bool _cursorEnable = false;
+
+        bool _skyboxEnable = true;
+
+        bool _sunLightEnable = true;
+        bool _pointLightsEnable = true;
+
+        int _postProcessEffect = 0;
 
         Shader* _program_model;
         Shader* _program_skybox;
