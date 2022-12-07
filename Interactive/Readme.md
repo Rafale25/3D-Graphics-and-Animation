@@ -1,7 +1,11 @@
 # Video
 
-### Demo video (youtube)
+## Demo video (youtube)
 https://www.youtube.com/watch?v=uJti37XhiEs
+
+<br>
+
+# The project
 
 ## Libraries used in this project (mandatories)
 
@@ -11,6 +15,8 @@ https://www.youtube.com/watch?v=uJti37XhiEs
 • GLM Library (http://glm.g-truc.net)<br>
 • Tiny GLTF (https://github.com/syoyo/tinygltf)<br>
 
+## The project
+
 This project is about make an interactive application using OpenGL and the librairies listed.
 The goals are:
 - import and draw models made in Blender from the Render assignement.
@@ -19,10 +25,14 @@ The goals are:
 - An exploration camera
 - Interactivity with the scene (user inputs)
 
+<br>
+
 # Introduction
 
 A template was given to expand on, but I did not use it (except for the Content class) because I have good experience with OpenGL, C++ and in graphical programming in general.<br>
 I used Linux and compiled the program with Cmake. (making compilation way faster)
+
+<br>
 
 # Windowing, Context, Render-Loop
 
@@ -136,6 +146,8 @@ The PBR tutorial has a theory section where they mention that a directional ligh
 
 <img src="images/pbr_lights.png" width="70%"/>
 
+<br>
+
 # Framebuffer Effects (post-processing)
 
 For the post-processing, I've implemented 2 effects.
@@ -153,15 +165,30 @@ For the post-processing, I've implemented 2 effects.
 
 <img src="images/color_invert.png" width="70%"/>
 
+<br>
 
 # Interactivity, simple Physic
 
 I implemented a First-Person camera which is controlled with WASD (direction), Left-Ctrl and Space for going up and down, and mouse for rotating.<br>
 
 For the interactivy, I added some very simple physic with grabity where objects have a velocity and can bounce on the ground.<br>
-I can hold an object by pressing F in front of it and it will have its position stick in front of the camera as well as its rotation.
+I can hold an object by pressing F in front of it and it will have its position stick in front of the camera as well as its rotation.<br>
 
-// gif of throwing object
+<br>
+
+I also added several settings in the ImGui window.
+- Framerate
+- Forward vector of the camera
+- A checkbox to turn on and off wireframe mode.
+- A checkbox to turn on and off the skybox.
+- A checkbox to turn on and off the sun light.
+- A checkbox to turn on and off the point lights.
+- An option to select the post processing effect.
+
+<img src="images/imgui.png" width="40%"/>
+
+
+<br>
 
 # Resources
 
