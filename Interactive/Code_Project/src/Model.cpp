@@ -24,7 +24,7 @@ void Model::loadGLTF(std::string filepath)
     bindModel();
 }
 
-void Model::draw(const Shader &program)
+void Model::draw(const Program &program)
 {
     _cachedProgram = &program;
     drawModel(_model);

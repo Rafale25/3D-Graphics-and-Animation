@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "View.hpp"
-#include "shader.h"
+#include "Program.h"
 #include "BoidManager.hpp"
 #include "Camera.hpp"
 
@@ -24,7 +24,7 @@ class TestView: public View {
                 60.0f, (float)width / (float)height, 0.01f, 1000.0f
             );
 
-            boid_shader = new Shader("./assets/boid.vs", "./assets/boid.fs");
+            boid_shader = new Program("./assets/boid.vs", "./assets/boid.fs");
 
             // boids
             boid_count = 10000;
@@ -252,7 +252,7 @@ class TestView: public View {
     private:
         int boid_count;
         OrbitCamera* camera;
-        Shader* boid_shader;
+        Program* boid_shader;
 
         BoidManager* boidManager;
         glm::vec4* positions;

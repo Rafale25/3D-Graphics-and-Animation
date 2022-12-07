@@ -12,7 +12,7 @@
 #include <tinygltf/stb_image.h>
 
 #include "View.hpp"
-#include "shader.h"
+#include "Program.h"
 #include "Camera.hpp"
 #include "Model.hpp"
 #include "Skybox.hpp"
@@ -40,9 +40,9 @@ class AppView: public View {
                 60.0f, (float)_width / (float)_height, 0.01f, 100.0f
             );
 
-            _program_skybox = new Shader("./assets/shaders/skybox.vert", "./assets/shaders/skybox.frag");
-            _program_model = new Shader("./assets/shaders/model_pbr.vs", "./assets/shaders/model_pbr.fs");
-            _program_screen = new Shader("./assets/shaders/screen.vert", "./assets/shaders/screen.frag");
+            _program_skybox = new Program("./assets/shaders/skybox.vert", "./assets/shaders/skybox.frag");
+            _program_model = new Program("./assets/shaders/model_pbr.vs", "./assets/shaders/model_pbr.fs");
+            _program_screen = new Program("./assets/shaders/screen.vert", "./assets/shaders/screen.frag");
 
             _framebuffer.create(_width, _height);
 
@@ -315,9 +315,9 @@ class AppView: public View {
 
         int _postProcessEffect = 0;
 
-        Shader* _program_model;
-        Shader* _program_skybox;
-        Shader* _program_screen; // post-processing
+        Program* _program_model;
+        Program* _program_skybox;
+        Program* _program_screen; // post-processing
 
         Skybox _skybox;
         FrameBuffer _framebuffer;

@@ -172,8 +172,7 @@ void main()
     // sun (directional)
     if (enableSunlight)
     {
-        // vec3 L = -normalize(vec3(.2, -.8, -.5));
-        vec3 L = -normalize(sunDirection);// -normalize(vec3(.2, -.8, -.5));
+        vec3 L = -normalize(sunDirection);
         vec3 H = normalize(V + L);
         vec3 sunColor = vec3(1.0, 1.0, 1.0);
         vec3 radiance = sunColor * sunIntensity;

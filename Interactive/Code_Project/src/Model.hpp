@@ -13,7 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "shader.h"
+#include "Program.h"
 #include "Transform.h"
 
 struct Texture
@@ -23,10 +23,10 @@ struct Texture
     std::string path; // we store the path of the texture to compare with other textures
 };
 
-struct Mesh // primitive in
+struct Mesh
 {
     GLuint vao;
-    std::map<int, GLuint> vbos; // or ebos idk // 1 VBO per viewBuffer
+    std::map<int, GLuint> vbos;
     uint materialId;
 };
 
@@ -36,11 +36,10 @@ class Model
 {
     public:
         // Model() {};
-        // Model();
         // ~Model();
 
         void loadGLTF(std::string filepath);
-        void draw(const Shader &program);
+        void draw(const Program &program);
 
     private:
         Mesh bindMesh(tinygltf::Model &model, tinygltf::Mesh &mesh);
@@ -58,13 +57,7 @@ class Model
     private:
         tinygltf::Model _model;
         std::map<int, Mesh> _meshes;
-        std::map<int, Texture> _textures; // TODO: check if textures are already loaded
+        std::map<int, Texture> _textures;
 
-        const Shader* _cachedProgram;
+        const Program* _cachedProgram;
 };
-
-/*
-    VAO: Vertex Array Object
-    VBO: Vertex Buffer Object
-    EBO: Element Buffer Object
-*/

@@ -9,9 +9,7 @@ class View {
         Context& ctx;
 
     public:
-        // View() = 0;
         View(Context& ctx): ctx(ctx) {};
-        // ~View() {};
 
         virtual void onHideView() {}
         virtual void onShowView() {}
@@ -39,12 +37,15 @@ class DefaultView: public View {
 
         void onUpdate(float time_since_start, float dt)
         {
+            // physic, logic ...
         }
 
         void onDraw(float time_since_start, float dt)
         {
             glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
+
+            // render
         }
 
         void onKeyPress(int key)
@@ -84,7 +85,6 @@ class DefaultView: public View {
 
         void onResize(int width, int height)
         {
-            // printf("%d %d\n", width, height);
             glViewport(0, 0, width, height);
         }
 };

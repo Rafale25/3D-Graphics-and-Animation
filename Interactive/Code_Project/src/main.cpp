@@ -9,14 +9,14 @@
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
 const char *TITLE = "F21GA";
-const int VSYNC = 0;
+const int VSYNC = 1;
 
 int main()
 {
     Context ctx(SCR_WIDTH, SCR_HEIGHT, TITLE);
 
-    // View* app_view = new AppView(ctx); // can't do View* or the destructor will not get called
-    View* app_view = new AppView(ctx); // can't do View* or the destructor will not get called
+    // View* test_view = new TestView(ctx);
+    View* app_view = new AppView(ctx);
 
     ctx.setVsync(VSYNC);
     ctx.show_view(app_view);
