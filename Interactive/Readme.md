@@ -174,6 +174,9 @@ I implemented a First-Person camera which is controlled with WASD (direction), L
 For the interactivy, I added some very simple physic with grabity where objects have a velocity and can bounce on the ground.<br>
 I can hold an object by pressing F in front of it and it will have its position stick in front of the camera as well as its rotation.<br>
 
+<img src="images/interactivity.gif" width="70%"/>
+
+
 <br>
 
 I also added several settings in the ImGui window.
